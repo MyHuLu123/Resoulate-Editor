@@ -1,0 +1,28 @@
+# Unity 自动生成文件
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]serSettings/
+/[Mm]emoryCaptures/
+/[Aa]ssets/AssetStoreTools*
+Assets/Font/SweiRightBottomLegCJKsc-Black SDF.asset
+Assets/Font/SweiRightBottomLegCJKsc-Black SDF.asset.meta
+
+# 工程文件
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+
+# VS/VSCode 配置
+.vs/
+.vscode/
+
+# 其他
+.DS_Store
