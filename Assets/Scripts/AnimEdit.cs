@@ -24,6 +24,26 @@ public class AnimEdit : MonoBehaviour
     public TMP_InputField _ID1;
     public TMP_InputField _ID2;
 
+    public enum AnimObjectType
+    {
+        Box,
+        Note,
+        Cover,
+        CoverPart,
+        setting
+    }
+    public enum BoxVar
+    {
+        x,
+        y,
+        angle,
+        speed,
+        color_r,
+        color_g,
+        color_b,
+        color_a
+    }
+    
     private GameObject targetObject = null;
     private string targetType = null;
     private GameObject ChoosingShower = null;
@@ -40,15 +60,15 @@ public class AnimEdit : MonoBehaviour
     private Dictionary<string, Dictionary<string,int>> variable_map = new Dictionary<string, Dictionary<string, int>>();
     private Dictionary<string, int> Tween_map = new Dictionary<string, int>();
     private Dictionary<string, int> Ease_map = new Dictionary<string, int>();
-    private List<List<AddChart.EventData>> ObjectEvents = new List<List<AddChart.EventData>>();
+    private List<List<EventData>> ObjectEvents = new List<List<EventData>>();
     private List<List<GameObject>> EventShower = new List<List<GameObject>>();
     private LineRenderer AnimLine = new LineRenderer();
     private GameObject AnimLineObject;
     private double NowAnimStartBeat;
     private double NowAnimStartTime;
     private GameObject NowLine = null;
-    private AddChart.EventData NowEventData;
-    private AddChart.EventData ChoosingEvent;
+    private EventData NowEventData;
+    private EventData ChoosingEvent;
     // Start is called before the first frame update
     private GameObject SetText(string _text)
     {
@@ -125,12 +145,12 @@ public class AnimEdit : MonoBehaviour
     }
     private void EventInit()
     {
-        AddChart.ChartData _chart = Editor.chart;
-        AddChart.EventData[] _event_data = _chart.events;
+        ChartData _chart = Editor.chart;
+        EventData[] _event_data = _chart.events;
 
         for(int i = 0; i < _chart.boxnum; i++)
         {
-            AddChart.BoxData _box = _chart.boxes[i];
+            BoxData _box = _chart.boxes[i];
             GameObject _box_collect = new GameObject("Box_events"); _box_collect.transform.SetParent(EventTypes[0].transform);
             for (int j = 0; j < variable_use[0].Count; j++)
             {
@@ -138,12 +158,13 @@ public class AnimEdit : MonoBehaviour
                 _empty_track.transform.localPosition = new Vector3(j * 15, 0, -5);
                 
             }
+            Debug.Log("now index:" + i.ToString());
             Editor.Box_Inst[i].GetComponent<BoxProperties>().ChangeEvent(_box_collect);
             _box_collect.SetActive(false);
         }
         for (int i = 0; i < _chart.notenum; i++)
         {
-            AddChart.NoteData _note = _chart.notes[i];
+            NoteData _note = _chart.notes[i];
             GameObject _note_collect = new GameObject("Note_events"); _note_collect.transform.SetParent(EventTypes[1].transform);
             for (int j = 0; j < variable_use[1].Count; j++)
             {
@@ -155,7 +176,7 @@ public class AnimEdit : MonoBehaviour
         }
         for (int i = 0; i < _chart.covernum; i++)
         {
-            AddChart.CoverData _cover = _chart.covers[i];
+            CoverData _cover = _chart.covers[i];
             GameObject _cover_collect = new GameObject("Cover_events"); _cover_collect.transform.SetParent(EventTypes[2].transform);
             for (int j = 0; j < variable_use[2].Count; j++)
             {
@@ -168,7 +189,7 @@ public class AnimEdit : MonoBehaviour
 
         for (int i = 0; i < _event_data.Length; i++)
         {
-            AddChart.EventData _event = _event_data[i];
+            EventData _event = _event_data[i];
             float _ypos = (float)(_event.endbeat + _event.beat) * 10;
             float _height = (float)(_event.endbeat - _event.beat) * 20;
             int _id1 = variable_type_map[_event.Object];
@@ -331,7 +352,7 @@ public class AnimEdit : MonoBehaviour
         end_beat.text = "0";
 
     }
-    private void LoadEvent(AddChart.EventData _event)
+    private void LoadEvent(EventData _event)
     {
         Tween.value = Tween_map[_event.Tween];
         Ease.value = Ease_map[_event.Ease];
@@ -350,9 +371,9 @@ public class AnimEdit : MonoBehaviour
         }
     }
 
-    private AddChart.EventData CreateEvent(int track_id,double beat)
+    private EventData CreateEvent(int track_id,double beat)
     {
-        AddChart.EventData new_evdt = new AddChart.EventData();
+        EventData new_evdt = new EventData();
         new_evdt.Object = Object;
         new_evdt.variable = variable_use[EventType.value][track_id];
         new_evdt.Tween = Tween.options[Tween.value].text;
@@ -413,7 +434,7 @@ public class AnimEdit : MonoBehaviour
     //----------------------------------//ÐÞ¸Ä¼àÌýÆ÷
     private void _shower_change(GameObject _shower)
     {
-        AddChart.EventData _eve = _shower.GetComponent<EventProperties>().GetEventData();
+        EventData _eve = _shower.GetComponent<EventProperties>().GetEventData();
         float ypos = 10 * ((float)(_eve.beat + _eve.endbeat));
         float yscale = 20 * ((float)(_eve.endbeat - _eve.beat));
         _shower.transform.localPosition = new Vector3(0, ypos, -10);

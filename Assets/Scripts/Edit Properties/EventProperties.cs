@@ -5,7 +5,7 @@ using UnityEngine;
 public class EventProperties : MonoBehaviour
 {
     private GameObject TargetObject;
-    private AddChart.EventData EventData = new AddChart.EventData();
+    private EventData EventData = new EventData();
     public void ChangeObject(GameObject obj)
     {
         TargetObject = obj;
@@ -14,7 +14,7 @@ public class EventProperties : MonoBehaviour
     {
         return TargetObject;
     }
-    public AddChart.EventData GetEventData()
+    public EventData GetEventData()
     {
         return EventData;
     }
@@ -60,9 +60,9 @@ public class EventProperties : MonoBehaviour
     }
     public void NewEvent()
     {
-        EventData = new AddChart.EventData();
+        EventData = new EventData();
     }
-    public void NewEvent(AddChart.EventData newevent)
+    public void NewEvent(EventData newevent)
     {
         EventData = newevent;
     }

@@ -7,7 +7,7 @@ public class NoteProperties : MonoBehaviour
     private GameObject TargetBox;
     private GameObject TargetEvent;
     private GameObject TargetCover;
-    private AddChart.NoteData NoteData = new AddChart.NoteData();
+    private NoteData NoteData = new NoteData();
 
     public GameObject GetBox()
     {
@@ -21,7 +21,7 @@ public class NoteProperties : MonoBehaviour
     {
         return TargetCover;
     }
-    public AddChart.NoteData GetNoteData()
+    public NoteData GetNoteData()
     {
         return NoteData;
     }
@@ -116,9 +116,9 @@ public class NoteProperties : MonoBehaviour
     }
     public void NewNote()
     {
-        NoteData = new AddChart.NoteData();
+        NoteData = new NoteData();
     }
-    public void NewNote(AddChart.NoteData newnote)
+    public void NewNote(NoteData newnote)
     {
         NoteData = newnote;
     }

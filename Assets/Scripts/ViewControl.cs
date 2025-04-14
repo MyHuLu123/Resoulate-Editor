@@ -28,7 +28,7 @@ public class ViewControl : MonoBehaviour
     private List<GameObject> BoxObjects = new List<GameObject>();
     private List<GameObject> NoteObjects = new List<GameObject>();
     private List<GameObject> CoverObjects = new List<GameObject>();
-    private List<AddChart.EventData> Events = new List<AddChart.EventData>();
+    private List<EventData> Events = new List<EventData>();
 
     public Text MusicLength;
     public Slider SongSlider;
@@ -56,7 +56,7 @@ public class ViewControl : MonoBehaviour
         CoverObjects.Clear();
         Events.Clear();
 
-        AddChart.ChartData chart = EditController.chart;
+        ChartData chart = EditController.chart;
         ViewCamera.orthographicSize = 160;
         width = 160; height = 160 * Screen.height / Screen.width;
         ViewCamera.transform.position = new Vector3(0, 0, 80);
@@ -71,7 +71,40 @@ public class ViewControl : MonoBehaviour
         time = 0;
         music = EditController.song;
         GetComponent<AudioSource>().clip = music;
+        for (int i = 0; i < chart.covernum; i++)
+        {
+            Debug.Log(SortingLayer.layers.Length);
+            CoverData _codt = chart.covers[i];
+            GameObject Obj = new GameObject("Cover");
+            Obj.transform.parent = ViewObjects.transform;
+            Obj.transform.localPosition = new Vector3(0, 0, 0);
+            GameObject _background = new GameObject("BackGround");
+            _background.transform.parent = Obj.transform;
+            _background.transform.localPosition = new Vector3(0, 0, 0);
+            _background.transform.localScale = new Vector3(1000, 1000, 1);
+            SpriteRenderer _SR = _background.AddComponent<SpriteRenderer>();
+            _SR.color = _codt.color; _SR.sprite = EditController.SpriteGet("Square");
+            _SR.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+            _SR.sortingLayerID = SortingLayer.NameToID("GameDisplay");
+            _SR.sortingOrder = _codt.groupBack + 1;
+            foreach (CoverPartData _copdt in _codt.CoverParts)
+            {
+                GameObject _part_obj = new GameObject("CoverPart");
+                _part_obj.transform.parent = Obj.transform;
+                _part_obj.transform.localPosition = new Vector3((float)_copdt.x, (float)_copdt.y, 0);
+                _part_obj.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, (float)_copdt.angle));
+                _part_obj.transform.localScale = new Vector3((float)_copdt.xscale, (float)_copdt.yscale, 1);
+                SpriteMask _sprmask = _part_obj.AddComponent<SpriteMask>();
+                _sprmask.backSortingLayerID = SortingLayer.NameToID("GameDisplay");
+                _sprmask.frontSortingLayerID = SortingLayer.NameToID("GameDisplay");
+                _sprmask.isCustomRangeActive = true;
+                _sprmask.frontSortingOrder = _codt.groupFront;
+                _sprmask.backSortingOrder = _codt.groupBack;
+                _sprmask.sprite = EditController.SpriteGet(_copdt.spriteName);
 
+            }
+            CoverObjects.Add(Obj);
+        }
         for (int i = 0; i < chart.boxnum; i++)
         {
             GameObject Obj = Instantiate(Box);
@@ -79,59 +112,55 @@ public class ViewControl : MonoBehaviour
             Obj.transform.parent = ViewObjects.transform;
             Obj.transform.localPosition = new Vector3((float)chart.boxes[i].x,(float)chart.boxes[i].y, 0);
             Obj.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, (float)chart.boxes[i].angle));
-            Obj.transform.localScale = new Vector3(1, 1, 1);
-            Obj.transform.GetChild(0).GetComponent<SpriteRenderer>().color = chart.boxes[i].color;
+            Obj.transform.localScale = new Vector3(15, 15, 1);
+            SpriteRenderer _spr = Obj.transform.GetChild(0).GetComponent<SpriteRenderer>();
+            _spr.color = chart.boxes[i].color;
+            _spr.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+            _spr.sortingOrder = chart.covers[chart.boxes[i].targetcover].groupBack + 2;
             BoxObjects.Add(Obj);
         }
         for (int i = 0; i < chart.notenum; i++)
         {
-            AddChart.NoteData ntdt = chart.notes[i];
+            NoteData ntdt = chart.notes[i];
+            GameObject note = null;
+            if (ntdt.type == "Tap") note = Instantiate(Tap);
+            else if (ntdt.type == "Drag") note = Instantiate(Drag);
+            else note = Instantiate(Hold);
+            note.transform.parent = BoxObjects[ntdt.targetbox].transform;
+            ViewNoteInfo V = note.GetComponent<ViewNoteInfo>();
+            V.time_start = ntdt.time_start;
+            V.speedoffset = ntdt.speedoffset;
+            V.targetbox = ntdt.targetbox;
+            V.notecolor = ntdt.color;
+            V.ViewController = this;
             //NoteIdInBox.Add(NoteObjects[ntdt.targetbox].Count);
+            int _sortOrd = note.transform.parent.GetChild(0).GetComponent<SpriteRenderer>().sortingOrder;
             if (ntdt.type == "Tap")
             {
-                GameObject note = Instantiate(Tap);
-                note.transform.parent = BoxObjects[ntdt.targetbox].transform;
-                ViewNoteInfo V = note.GetComponent<ViewNoteInfo>();
-                V.time_start = ntdt.time_start;
-                V.speedoffset = ntdt.speedoffset;
-                V.targetbox = ntdt.targetbox;
-                V.notecolor = ntdt.color;
-                V.ViewController = this;
                 note.transform.localPosition = new Vector3((float)ntdt.xoffset, (float)ntdt.yoffset, 0);
                 note.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, (float)ntdt.angleoffset));
                 note.transform.localScale = new Vector3(1, 1, 0);
                 note.transform.GetChild(0).localPosition = new Vector3(0, (float)ntdt.time_start * (float)(ntdt.speedoffset + chart.boxes[ntdt.targetbox].speed), -1);
                 note.transform.GetChild(0).GetComponent<SpriteRenderer>().color = ntdt.color;
+                SpriteRenderer _box_spr = note.transform.parent.GetComponent<SpriteRenderer>();
+                note.transform.GetChild(0).GetComponent<SpriteRenderer>().maskInteraction = _box_spr.maskInteraction;
+                note.transform.GetChild(0).GetComponent<SpriteRenderer>().sortingOrder = _box_spr.sortingOrder;
                 NoteObjects.Add(note);
             }
             else if (ntdt.type == "Drag")
             {
-                GameObject note = Instantiate(Drag);
-                note.transform.parent = BoxObjects[ntdt.targetbox].transform;
-                ViewNoteInfo V = note.GetComponent<ViewNoteInfo>();
-                V.time_start = ntdt.time_start;
-                V.speedoffset = ntdt.speedoffset;
-                V.targetbox = ntdt.targetbox;
-                V.notecolor = ntdt.color;
-                V.ViewController = this;
                 note.transform.localPosition = new Vector3((float)ntdt.xoffset, (float)ntdt.yoffset, 0);
                 note.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, (float)ntdt.angleoffset));
                 note.transform.localScale = new Vector3(1, 1, 0);
                 note.transform.GetChild(0).localPosition = new Vector3(0, (float)ntdt.time_start * (float)(ntdt.speedoffset + chart.boxes[ntdt.targetbox].speed), -1);
                 note.transform.GetChild(0).GetComponent<SpriteRenderer>().color = ntdt.color;
+                SpriteRenderer _box_spr = note.transform.parent.GetComponent<SpriteRenderer>();
+                note.transform.GetChild(0).GetComponent<SpriteRenderer>().maskInteraction = _box_spr.maskInteraction;
+                note.transform.GetChild(0).GetComponent<SpriteRenderer>().sortingOrder = _box_spr.sortingOrder;
                 NoteObjects.Add(note);
             }
-            else if (ntdt.type == "Hold")
+            else
             {
-                GameObject note = Instantiate(Hold);
-                note.transform.parent = BoxObjects[ntdt.targetbox].transform;
-                ViewNoteInfo V = note.GetComponent<ViewNoteInfo>();
-                V.time_start = ntdt.time_start;
-                V.time_end = ntdt.time_end;
-                V.speedoffset = ntdt.speedoffset;
-                V.targetbox = ntdt.targetbox;
-                V.notecolor = ntdt.color;
-                V.ViewController = this;
                 note.transform.localPosition = new Vector3((float)ntdt.xoffset, (float)ntdt.yoffset, 0);
                 note.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, (float)ntdt.angleoffset));
                 note.transform.localScale = new Vector3(1, 1, 0);
@@ -145,19 +174,23 @@ public class ViewControl : MonoBehaviour
                 note.transform.GetChild(1).localScale = new Vector3((float)1.359375, note.transform.GetChild(2).localPosition.y - note.transform.GetChild(0).localPosition.y, 1);
                 note.transform.GetChild(3).localScale = new Vector3((float)0.02586207, note.transform.GetChild(1).localScale.y, 1);
                 note.transform.GetChild(4).localScale = new Vector3((float)0.02586207, note.transform.GetChild(1).localScale.y, 1);
+                SpriteRenderer _box_spr = note.transform.parent.GetComponent<SpriteRenderer>();
                 for (int k = 0; k < 5; k++)
                 {
+                    SpriteRenderer _spr = note.transform.GetChild(k).GetComponent<SpriteRenderer>();
+                    _spr.sortingOrder = _box_spr.sortingOrder;
+                    _spr.maskInteraction = _box_spr.maskInteraction;
                     if (k == 3 || k == 4)
                     {
-                        note.transform.GetChild(k).GetComponent<SpriteRenderer>().color = Color.black;
+                        _spr.color = Color.black;
                     }
                     else if (k == 1)
                     {
                         var col = ntdt.color;
                         col.a = col.a * (float)0.6;
-                        note.transform.GetChild(k).GetComponent<SpriteRenderer>().color = col;
+                        _spr.color = col;
                     }
-                    else note.transform.GetChild(k).GetComponent<SpriteRenderer>().color = ntdt.color;
+                    else _spr.color = ntdt.color;
                 }
                 NoteObjects.Add(note);
             }
@@ -166,40 +199,7 @@ public class ViewControl : MonoBehaviour
         {
             Events.Add(chart.events[i]);
         }
-        for(int i = 0; i < chart.covernum; i++)
-        {
-            Debug.Log(SortingLayer.layers.Length);
-            AddChart.CoverData _codt = chart.covers[i];
-            GameObject Obj = new GameObject("Cover");
-            Obj.transform.parent = ViewObjects.transform;
-            Obj.transform.localPosition = new Vector3(0, 0, 0);
-            GameObject _background = new GameObject("BackGround");
-            _background.transform.parent = Obj.transform;
-            _background.transform.localPosition = new Vector3(0, 0, 0);
-            _background.transform.localScale = new Vector3(1000, 1000, 1);
-            SpriteRenderer _SR =_background.AddComponent<SpriteRenderer>();
-            _SR.color = _codt.color; _SR.sprite = EditController.SpriteGet("Square");
-            _SR.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
-            _SR.sortingLayerID = SortingLayer.NameToID("GameDisplay");
-            _SR.sortingOrder = _codt.groupBack + 1;
-            foreach (AddChart.CoverPartData _copdt in _codt.CoverParts)
-            {
-                GameObject _part_obj = new GameObject("CoverPart");
-                _part_obj.transform.parent = Obj.transform;
-                _part_obj.transform.localPosition = new Vector3((float)_copdt.x,(float)_copdt.y,0);
-                _part_obj.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, (float)_copdt.angle));
-                _part_obj.transform.localScale = new Vector3((float)_copdt.xscale,(float)_copdt.yscale,1);
-                SpriteMask _sprmask = _part_obj.AddComponent<SpriteMask>();
-                _sprmask.backSortingLayerID = SortingLayer.NameToID("GameDisplay");
-                _sprmask.frontSortingLayerID = SortingLayer.NameToID("GameDisplay");
-                _sprmask.isCustomRangeActive = true;
-                _sprmask.frontSortingOrder = _codt.groupFront;
-                _sprmask.backSortingOrder = _codt.groupBack;
-                _sprmask.sprite = EditController.SpriteGet(_copdt.spriteName);
-
-            }
-            CoverObjects.Add(Obj);
-        }
+        
 
     }
 
@@ -382,7 +382,7 @@ public class ViewControl : MonoBehaviour
         Vector2 v = Camera.main.ViewportToWorldPoint(new Vector2(0, 0));
         Vector2 v1 = Camera.main.ViewportToWorldPoint(new Vector2(1, 1));
         Vector2 delta = v1 - v;
-        AddChart.ChartData chart = EditController.chart;
+        ChartData chart = EditController.chart;
         for (int i = 0; i < BoxObjects.Count; i++)
         {
             GameObject Obj = BoxObjects[i];
@@ -394,7 +394,7 @@ public class ViewControl : MonoBehaviour
         }
         for (int i = 0; i < NoteObjects.Count; i++)
         {
-            AddChart.NoteData ntdt = chart.notes[i];
+            NoteData ntdt = chart.notes[i];
             //int id2 = chart.notes[i].targetbox; int id3 = NoteIdInBox[i];
             GameObject note = NoteObjects[i];
             string T = note.GetComponent<ViewNoteInfo>().type;
@@ -423,7 +423,7 @@ public class ViewControl : MonoBehaviour
                 note.transform.GetChild(4).localScale = new Vector3(0.02586207f, note.transform.GetChild(1).localScale.y, 1);
             }
         }
-        foreach(AddChart.EventData eve in Events)
+        foreach(EventData eve in Events)
         {
             if (time >= eve.time + time_tobeat)
             {

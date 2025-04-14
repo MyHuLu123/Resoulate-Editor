@@ -6,18 +6,18 @@ public class BoxProperties : MonoBehaviour
 {
     private GameObject TargetEvent;
     private GameObject TargetCover;
-    private AddChart.BoxData BoxData = new AddChart.BoxData();
+    private BoxData BoxData = new BoxData();
     public BoxProperties()
     {
         TargetEvent = null;
         TargetCover = null;
-        BoxData = new AddChart.BoxData();
+        BoxData = new BoxData();
     }
     public GameObject GetEvent()
     {
         return TargetEvent;
     }
-    public AddChart.BoxData GetBoxData()
+    public BoxData GetBoxData()
     {
         return BoxData;
     }
@@ -61,9 +61,9 @@ public class BoxProperties : MonoBehaviour
     }
     public void NewBox()
     {
-        BoxData = new AddChart.BoxData();
+        BoxData = new BoxData();
     }
-    public void NewBox(AddChart.BoxData boxdata)
+    public void NewBox(BoxData boxdata)
     {
         BoxData = boxdata;
     }

@@ -32,9 +32,10 @@ public class CoverEdit : MonoBehaviour
     public TMP_InputField CoverPartAngle;
 
 
-    public List<AddChart.CoverData> covers = new List<AddChart.CoverData>();
-    public List<List<AddChart.CoverPartData>> coverParts = new List<List<AddChart.CoverPartData>>();
-
+    public List<CoverData> covers = new List<CoverData>();
+    public List<List<CoverPartData>> coverParts = new List<List<CoverPartData>>();
+    public List<GameObject> CoverObject = new List<GameObject>();
+    public GameObject Object_None = null;
 
     public void CoverLoadPart()
     {
@@ -50,16 +51,17 @@ public class CoverEdit : MonoBehaviour
     {
         for (int i = 0; i < Editor.chart.covernum; i++)
         {
-            AddChart.CoverData _cov = Editor.chart.covers[i];
-            coverParts.Add(new List<AddChart.CoverPartData>());
+            CoverData _cov = Editor.chart.covers[i];
+            coverParts.Add(new List<CoverPartData>());
             CoverPartIdMax.Add(_cov.SpriteMaskNum-1);
             covers.Add(_cov);
+            CoverObject.Add(new GameObject("Cover_" + i.ToString()));
             for(int j = 0; j < _cov.SpriteMaskNum; j++)
             {
                 coverParts[i].Add(_cov.CoverParts[j]);
-                
             }
         }
+        Object_None = new GameObject("Cover_None");
         CoverIdMax = covers.Count - 1;
         _changerangeshow();
     }
@@ -92,7 +94,7 @@ public class CoverEdit : MonoBehaviour
     {
         if(chosen_coverId != -1)
         {
-            AddChart.CoverData _codt = covers[chosen_coverId];
+            CoverData _codt = covers[chosen_coverId];
             _codt.color = _col;
             covers[chosen_coverId] = _codt;
         }
@@ -105,7 +107,7 @@ public class CoverEdit : MonoBehaviour
         CoverFront.text = _front.ToString();
         if (chosen_coverId != -1)
         {
-            AddChart.CoverData _codt = covers[chosen_coverId];
+            CoverData _codt = covers[chosen_coverId];
             _codt.groupFront = _front;
             covers[chosen_coverId] = _codt;
         }
@@ -118,7 +120,7 @@ public class CoverEdit : MonoBehaviour
         CoverBack.text = _back.ToString();
         if (chosen_coverId != -1)
         {
-            AddChart.CoverData _codt = covers[chosen_coverId];
+            CoverData _codt = covers[chosen_coverId];
             _codt.groupBack = _back;
             covers[chosen_coverId] = _codt;
         }
@@ -216,12 +218,12 @@ public class CoverEdit : MonoBehaviour
     }
     private void _addcover()
     {
-        AddChart.CoverData _new_cov = new AddChart.CoverData();
+        CoverData _new_cov = new CoverData();
         _new_cov.groupFront = int.Parse(CoverFront.text);
         _new_cov.groupBack = int.Parse(CoverBack.text);
         _new_cov.color = Cover_Color.GetColor();
         covers.Add(_new_cov);
-        coverParts.Add(new List<AddChart.CoverPartData>());
+        coverParts.Add(new List<CoverPartData>());
         CoverPartIdMax.Add(-1);
         chosen_coverId = ++CoverIdMax;
 
@@ -232,7 +234,7 @@ public class CoverEdit : MonoBehaviour
     private void _addcoverpart()
     {
         if (chosen_coverId == -1) return;
-        AddChart.CoverPartData _newpart = new AddChart.CoverPartData();
+        CoverPartData _newpart = new CoverPartData();
         _newpart.spriteName = CoverSpriteChoose.options[CoverSpriteChoose.value].text;
         _newpart.x = double.Parse(CoverPartX.text);
         _newpart.y = double.Parse(CoverPartY.text);

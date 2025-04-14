@@ -6,8 +6,13 @@ using UnityEngine.UI;
 public class NoteEdit : MonoBehaviour
 {
     public EditController Editor;
+    public BoxEdit BoxEditor;
 
     private GameObject TargetNote = null;
+    public List<NoteData> Notes_List = new List<NoteData>();
+    public List<GameObject> NoteObjects = new List<GameObject>();
+    public List<GameObject> TargetBoxObjects = new List<GameObject>();
+
 
     public string type;
     public Text targetbox;
@@ -98,7 +103,49 @@ public class NoteEdit : MonoBehaviour
         Editor.AddNewNote(TargetNote);
     }
     public Button delete;
-    void Start()
+
+    public void Init()
+    {
+        ChartData _chart = Editor.chart;
+        GameObject _parent = GameObject.Find("NotesSquare");
+        GameObject _p = null;
+        for(int i = 0; i < _chart.notenum; i++)
+        {
+            NoteData _ntdt = _chart.notes[i];
+            Notes_List.Add(_ntdt);
+            int _box_id = _ntdt.targetbox;
+            _p = _parent.transform.GetChild(_box_id).gameObject;
+            TargetBoxObjects.Add(_p);
+            GameObject _square = Editor.Square;
+            GameObject newNote = Instantiate(_square); newNote.name = _ntdt.type;
+            newNote.transform.parent = _p.transform;
+            if(_ntdt.type == "Tap")
+            {
+                newNote.transform.localPosition = new Vector3(0, (float)_ntdt.beat_start * 20, -5);
+                newNote.transform.localScale = new Vector3(6, 1, 1);
+                newNote.GetComponent<SpriteRenderer>().color = new Vector4(0, 0, 1, 0.6f);
+            }
+            else if(_ntdt.type == "Drag")
+            {
+                newNote.transform.localPosition = new Vector3(0, (float)_ntdt.beat_start * 20, -5);
+                newNote.transform.localScale = new Vector3(6, 1, 1);
+                newNote.GetComponent<SpriteRenderer>().color = new Vector4(1, 0.92f, 0.016f, 0.6f);
+            }
+            else if(_ntdt.type == "Hold")
+            {
+                float y1 = (float)_ntdt.beat_start * 20;
+                float y2 = (float)_ntdt.beat_end * 20;
+                newNote.transform.localPosition = new Vector3(0, (y1 + y2) / 2, -5);
+                newNote.transform.localScale = new Vector3(6, (y2 - y1), 1);
+                newNote.GetComponent<SpriteRenderer>().color = new Vector4(0, 0, 1, 0.6f);
+            }
+            newNote.AddComponent<BoxCollider>();
+            NoteObjects.Add(newNote);
+           
+        }
+    }
+
+    void Awake()
     {
         gameObject.SetActive(false);
         beatStart.text = "0";
@@ -112,23 +159,27 @@ public class NoteEdit : MonoBehaviour
         NoteColor.OnColorChanged += _colorchange;
         delete.onClick.AddListener(OnDelete);
     }
-    public void ChangeTarget(GameObject newNote)
+    public void Add(NoteData newNote,GameObject TargetObject,int BoxId)
     {
-        TargetNote = newNote;
-        NoteProperties NoteProp = newNote.GetComponent<NoteProperties>();
-        AddChart.NoteData GetInfo = NoteProp.GetNoteData();
-        type = GetInfo.type;
-        targetbox.text = Editor.Box_Inst.IndexOf(NoteProp.GetBox()).ToString();
-        timeStart.text = GetInfo.time_start.ToString();
-        timeEnd.text = GetInfo.time_end.ToString();
-        beatStart.text = GetInfo.beat_start.ToString();
-        beatEnd.text = GetInfo.beat_end.ToString();
-        XOffset.text = GetInfo.xoffset.ToString();
-        YOffset.text = GetInfo.yoffset.ToString();
-        SpeedOffset.text = GetInfo.speedoffset.ToString();
-        AngleOffset.text = GetInfo.angleoffset.ToString();
-        NoteColor.SetColor(GetInfo.color);
-
+        Notes_List.Add(newNote);
+        NoteObjects.Add(TargetObject);
+        TargetBoxObjects.Add(BoxEditor.BoxObjects[newNote.targetbox]);
+        ChangeTarget(NoteObjects.Count-1);
+    }
+    public void ChangeTarget(int index)
+    {
+        NoteData _ntdt = Notes_List[index];
+        type = _ntdt.type;
+        targetbox.text = BoxEditor.BoxObjects.IndexOf(TargetBoxObjects[index]).ToString();
+        timeStart.text = _ntdt.time_start.ToString();
+        timeEnd.text = _ntdt.time_end.ToString();
+        beatStart.text = _ntdt.beat_start.ToString();
+        beatEnd.text = _ntdt.beat_end.ToString();
+        XOffset.text = _ntdt.xoffset.ToString();
+        YOffset.text = _ntdt.yoffset.ToString();
+        SpeedOffset.text = _ntdt.speedoffset.ToString();
+        AngleOffset.text = _ntdt.angleoffset.ToString();
+        NoteColor.SetColor(_ntdt.color);
         if (type != "Hold")
         {
             beatEnd.interactable = false;
@@ -154,12 +205,12 @@ public class NoteEdit : MonoBehaviour
         
         if(_id < Editor.Note_Inst.Count && _id>=0)
         {
-            ChangeTarget(Editor.Note_Inst[_id]);
+            ChangeTarget(_id);
         }
         else if(_id == Editor.Note_Inst.Count)
         {
             _id--;
-            if(_id>=0) ChangeTarget(Editor.Note_Inst[_id]);
+            if(_id>=0) ChangeTarget(_id);
         }
     }
     void OnDestroy()
