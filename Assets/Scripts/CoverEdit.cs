@@ -11,8 +11,8 @@ public class CoverEdit : MonoBehaviour
     public TMP_InputField CoverPartId = null;
     private int CoverIdMax = -1;
     public List<int> CoverPartIdMax = new List<int>();
-    private int chosen_coverId = -1;
-    private int chosen_coverPartId = -1;
+    public int chosen_coverId = -1;
+    public int chosen_coverPartId = -1;
     public Button AddCover = null;
     public Button AddCoverPart = null;
     public Button DelCover = null;
@@ -33,33 +33,29 @@ public class CoverEdit : MonoBehaviour
 
 
     public List<CoverData> covers = new List<CoverData>();
-    public List<List<CoverPartData>> coverParts = new List<List<CoverPartData>>();
     public List<GameObject> CoverObject = new List<GameObject>();
+    public List<CoverPartData> coverParts = new List<CoverPartData>();
+    public List<GameObject> CoverPartObject = new List<GameObject>();
+    public List<GameObject> PartTargetCover = new List<GameObject>();
     public GameObject Object_None = null;
-
-    public void CoverLoadPart()
-    {
-        for(int i = 0; i < covers.Count; i++)
-        {
-            var _cov = covers[i];
-            _cov.SpriteMaskNum = coverParts[i].Count;
-            _cov.CoverParts = coverParts[i].ToArray();
-            covers[i] = _cov;
-        }
-    }
     public void Init()
     {
         for (int i = 0; i < Editor.chart.covernum; i++)
         {
             CoverData _cov = Editor.chart.covers[i];
-            coverParts.Add(new List<CoverPartData>());
-            CoverPartIdMax.Add(_cov.SpriteMaskNum-1);
+            CoverPartIdMax.Add(-1);
             covers.Add(_cov);
-            CoverObject.Add(new GameObject("Cover_" + i.ToString()));
-            for(int j = 0; j < _cov.SpriteMaskNum; j++)
-            {
-                coverParts[i].Add(_cov.CoverParts[j]);
-            }
+            CoverObject.Add(new GameObject("Cover"));
+        }
+        for(int i = 0; i < Editor.chart.coverpartnum; i++)
+        {
+            CoverPartData _covpart = Editor.chart.coverparts[i];
+            coverParts.Add(_covpart);
+            GameObject cover_part_obj = new GameObject("CoverPart");
+            cover_part_obj.transform.parent = CoverObject[_covpart.targetCover].transform;
+            CoverPartObject.Add(cover_part_obj);
+            PartTargetCover.Add(CoverObject[_covpart.targetCover]);
+            CoverPartIdMax[_covpart.targetCover]++;
         }
         Object_None = new GameObject("Cover_None");
         CoverIdMax = covers.Count - 1;
@@ -180,7 +176,9 @@ public class CoverEdit : MonoBehaviour
         chosen_coverPartId = int.Parse(CoverPartId.text);
         if(chosen_coverPartId != -1)
         {
-            var _part = coverParts[chosen_coverId][chosen_coverPartId];
+            GameObject _obj = CoverObject[chosen_coverId].transform.GetChild(chosen_coverPartId).gameObject;
+            int _partid = CoverPartObject.IndexOf(_obj);
+            var _part = coverParts[_partid];
             CoverPartX.text = _part.x.ToString();
             CoverPartY.text = _part.y.ToString();
             CoverPartXscale.text = _part.xscale.ToString();
@@ -201,20 +199,24 @@ public class CoverEdit : MonoBehaviour
     private void _changeChooseSprite(int val)
     {
         if (chosen_coverPartId == -1) return;
-        var _part = coverParts[chosen_coverId][chosen_coverPartId];
+        GameObject _obj = CoverObject[chosen_coverId].transform.GetChild(chosen_coverPartId).gameObject;
+        int _partid = CoverPartObject.IndexOf(_obj);
+        var _part = coverParts[_partid];
         _part.spriteName = CoverSpriteChoose.options[val].text;
-        coverParts[chosen_coverId][chosen_coverPartId] = _part;
+        coverParts[_partid] = _part;
     }
     private void _changeContentPartVal(string _str)
     {
         if (chosen_coverPartId == -1) return;
-        var _part = coverParts[chosen_coverId][chosen_coverPartId];
+        GameObject _obj = CoverObject[chosen_coverId].transform.GetChild(chosen_coverPartId).gameObject;
+        int _partid = CoverPartObject.IndexOf(_obj);
+        var _part = coverParts[_partid];
         _part.x = double.Parse(CoverPartX.text);
         _part.y = double.Parse(CoverPartY.text);
         _part.xscale = double.Parse(CoverPartXscale.text);
         _part.yscale = double.Parse(CoverPartYscale.text);
         _part.angle = double.Parse(CoverPartAngle.text);
-        coverParts[chosen_coverId][chosen_coverPartId] = _part;
+        coverParts[_partid] = _part;
     }
     private void _addcover()
     {
@@ -223,7 +225,7 @@ public class CoverEdit : MonoBehaviour
         _new_cov.groupBack = int.Parse(CoverBack.text);
         _new_cov.color = Cover_Color.GetColor();
         covers.Add(_new_cov);
-        coverParts.Add(new List<CoverPartData>());
+        CoverObject.Add(new GameObject("Cover"));
         CoverPartIdMax.Add(-1);
         chosen_coverId = ++CoverIdMax;
 
@@ -235,14 +237,22 @@ public class CoverEdit : MonoBehaviour
     {
         if (chosen_coverId == -1) return;
         CoverPartData _newpart = new CoverPartData();
+        _newpart.targetCover = chosen_coverId;
         _newpart.spriteName = CoverSpriteChoose.options[CoverSpriteChoose.value].text;
         _newpart.x = double.Parse(CoverPartX.text);
         _newpart.y = double.Parse(CoverPartY.text);
         _newpart.angle = double.Parse(CoverPartAngle.text);
         _newpart.xscale = double.Parse(CoverPartXscale.text);
         _newpart.yscale = double.Parse(CoverPartYscale.text);
-        coverParts[chosen_coverId].Add(_newpart);
-        chosen_coverPartId = coverParts[chosen_coverId].Count - 1;
+        coverParts.Add(_newpart);
+
+        GameObject cover_part_obj = new GameObject("CoverPart");
+        cover_part_obj.transform.parent = CoverObject[chosen_coverId].transform;
+        CoverPartObject.Add(cover_part_obj);
+        PartTargetCover.Add(CoverObject[chosen_coverId]);
+        CoverPartIdMax[chosen_coverId]++;
+
+        chosen_coverPartId = CoverPartIdMax[chosen_coverId];
         CoverPartId.text = chosen_coverPartId.ToString();
         CoverPartIdMax[chosen_coverId] = chosen_coverPartId;
         _changerangeshow();

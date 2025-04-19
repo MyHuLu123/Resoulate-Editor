@@ -5,6 +5,7 @@ using UnityEngine;
 public struct CoverPartData
 {
     public string spriteName;
+    public int targetCover;
     public double x;
     public double y;
     public double xscale;

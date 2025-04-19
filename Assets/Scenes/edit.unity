@@ -2378,9 +2378,17 @@ MonoBehaviour:
   AnimObject: {fileID: 1465656734}
   Delete: {fileID: 2095819053}
   LineMaterial: {fileID: 2100000, guid: 16ac953952e1d344e9a647ff3655d624, type: 2}
+  BoxEditor: {fileID: 1163965919}
+  NoteEditor: {fileID: 449220937}
+  CoverEditor: {fileID: 1824179273}
   EventType: {fileID: 285290786}
   _ID1: {fileID: 1972259271}
   _ID2: {fileID: 1016594267}
+  targetObject: {fileID: 0}
+  targetType: 
+  EventTargetObject: []
+  EventParent: []
+  nowTargetId: -1
 --- !u!1 &203279664
 GameObject:
   m_ObjectHideFlags: 0
@@ -3621,6 +3629,8 @@ MonoBehaviour:
     - m_Text: Note
       m_Image: {fileID: 0}
     - m_Text: Cover
+      m_Image: {fileID: 0}
+    - m_Text: CoverPart
       m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
@@ -5439,8 +5449,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u200B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c133395de7c60ce4099d98e0830e9f20, type: 2}
+  m_sharedMaterial: {fileID: -7164555778590591391, guid: c133395de7c60ce4099d98e0830e9f20, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5464,10 +5474,10 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 14
+  m_fontSize: 72
   m_fontSizeBase: 14
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
@@ -5951,9 +5961,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Editor: {fileID: 948730049}
+  BoxEditor: {fileID: 1163965919}
   Notes_List: []
   NoteObjects: []
   TargetBoxObjects: []
+  noteId: -1
   type: 
   targetbox: {fileID: 1170653809}
   timeStart: {fileID: 1562918916}
@@ -11202,14 +11214,14 @@ MonoBehaviour:
   m_VerticalScrollbarEventHandler: {fileID: 0}
   m_LayoutGroup: {fileID: 0}
   m_ScrollSensitivity: 1
-  m_ContentType: 0
+  m_ContentType: 2
   m_InputType: 0
   m_AsteriskChar: 42
-  m_KeyboardType: 0
+  m_KeyboardType: 4
   m_LineType: 0
   m_HideMobileInput: 0
   m_HideSoftKeyboard: 0
-  m_CharacterValidation: 0
+  m_CharacterValidation: 2
   m_RegexValue: 
   m_GlobalPointSize: 14
   m_CharacterLimit: 0
@@ -11245,7 +11257,7 @@ MonoBehaviour:
   m_CaretWidth: 1
   m_ReadOnly: 0
   m_RichText: 1
-  m_GlobalFontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_GlobalFontAsset: {fileID: 11400000, guid: c133395de7c60ce4099d98e0830e9f20, type: 2}
   m_OnFocusSelectAll: 1
   m_ResetOnDeActivation: 1
   m_RestoreOriginalTextOnEscape: 1
@@ -12634,7 +12646,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: Option A
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c133395de7c60ce4099d98e0830e9f20, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -12662,7 +12674,7 @@ MonoBehaviour:
   m_fontSize: 30
   m_fontSizeBase: 30
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
@@ -12698,7 +12710,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
+  m_hasFontAssetChanged: 1
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!222 &796641022
@@ -13132,13 +13144,7 @@ MonoBehaviour:
   m_ItemImage: {fileID: 0}
   m_Value: 0
   m_Options:
-    m_Options:
-    - m_Text: Option A
-      m_Image: {fileID: 0}
-    - m_Text: Option B
-      m_Image: {fileID: 0}
-    - m_Text: Option C
-      m_Image: {fileID: 0}
+    m_Options: []
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -15624,15 +15630,14 @@ MonoBehaviour:
     events: []
     covernum: 0
     covers: []
+    coverpartnum: 0
+    coverparts: []
     imagenum: 0
     images: []
     spritenum: 0
     sprites: {fileID: 0}
     time_offset: 0
     beat_set: 0
-  Box_Inst: []
-  Note_Inst: []
-  Event_Inst: []
   Sprite_Images:
   - {fileID: -5177388603050735206, guid: 8884154dfe85442a3a3578be807dbcdf, type: 3}
   - {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
@@ -15648,7 +15653,6 @@ MonoBehaviour:
   Borders: {fileID: 0}
   BoxBorder: {fileID: 0}
   NotesSquare: {fileID: 0}
-  Events_all: []
   songLength: 0
   beats: 0
   NowPerBeat: 2
@@ -20051,6 +20055,8 @@ MonoBehaviour:
   TargetCoverObject: []
   Boxes_List: []
   BoxObjects: []
+  BoxLines: []
+  _now_id: -1
   boxX: {fileID: 2114747571}
   boxY: {fileID: 44863076}
   boxSpeed: {fileID: 1082361807}
@@ -30417,6 +30423,8 @@ MonoBehaviour:
   CoverId: {fileID: 140309925}
   CoverPartId: {fileID: 642611112}
   CoverPartIdMax: 
+  chosen_coverId: -1
+  chosen_coverPartId: -1
   AddCover: {fileID: 1414243993}
   AddCoverPart: {fileID: 625288518}
   DelCover: {fileID: 0}
@@ -30435,6 +30443,9 @@ MonoBehaviour:
   CoverPartAngle: {fileID: 2034690982}
   covers: []
   CoverObject: []
+  coverParts: []
+  CoverPartObject: []
+  PartTargetCover: []
   Object_None: {fileID: 0}
 --- !u!1 &1825064351
 GameObject:

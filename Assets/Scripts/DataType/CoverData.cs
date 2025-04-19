@@ -8,7 +8,5 @@ public struct CoverData
     //public string spriteName;
     public int groupFront;
     public int groupBack;
-    public int SpriteMaskNum;
     public Color color;
-    public CoverPartData[] CoverParts;
 }

@@ -13,6 +13,7 @@ public class NoteEdit : MonoBehaviour
     public List<GameObject> NoteObjects = new List<GameObject>();
     public List<GameObject> TargetBoxObjects = new List<GameObject>();
 
+    public int noteId = -1;
 
     public string type;
     public Text targetbox;
@@ -33,7 +34,10 @@ public class NoteEdit : MonoBehaviour
         {
             _xoffset = XOffset.text = "0";
         }
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("xoffset", _xoffset);
+        if (noteId == -1) return;
+        NoteData _ntdt = Notes_List[noteId];
+        _ntdt.xoffset = double.Parse(_xoffset);
+        Notes_List[noteId] = _ntdt;
     }
     private void _changeYOffset(string _yoffset)
     {
@@ -41,7 +45,10 @@ public class NoteEdit : MonoBehaviour
         {
             _yoffset = YOffset.text = "0";
         }
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("yoffset", _yoffset);
+        if (noteId == -1) return;
+        NoteData _ntdt = Notes_List[noteId];
+        _ntdt.yoffset = double.Parse(_yoffset);
+        Notes_List[noteId] = _ntdt;
     }
     private void _changeSpeedOffset(string _speedoffset)
     {
@@ -49,7 +56,10 @@ public class NoteEdit : MonoBehaviour
         {
             _speedoffset = SpeedOffset.text = "0";
         }
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("speedoffset", _speedoffset);
+        if (noteId == -1) return;
+        NoteData _ntdt = Notes_List[noteId];
+        _ntdt.speedoffset = double.Parse(_speedoffset);
+        Notes_List[noteId] = _ntdt;
     }
     private void _changeAngleOffset(string _angleoffset)
     {
@@ -57,14 +67,17 @@ public class NoteEdit : MonoBehaviour
         {
             _angleoffset = AngleOffset.text = "0";
         }
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("angleoffset", _angleoffset);
+        if (noteId == -1) return;
+        NoteData _ntdt = Notes_List[noteId];
+        _ntdt.angleoffset = double.Parse(_angleoffset);
+        Notes_List[noteId] = _ntdt;
     }
     private void _colorchange(Color newcolor)
     {
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("color_r", newcolor.r.ToString());
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("color_g", newcolor.g.ToString());
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("color_b", newcolor.b.ToString());
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("color_a", newcolor.a.ToString());
+        if (noteId == -1) return;
+        NoteData _ntdt = Notes_List[noteId];
+        _ntdt.color = newcolor;
+        Notes_List[noteId] = _ntdt;
     }
     private void _changeBeatStart(string _beatstart)
     {
@@ -72,14 +85,20 @@ public class NoteEdit : MonoBehaviour
         {
             _beatstart = beatStart.text = "0";
         }
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("beat_start", _beatstart);
-        beatStart.text = TargetNote.GetComponent<NoteProperties>().GetNoteData().beat_start.ToString();
-        beatEnd.text = TargetNote.GetComponent<NoteProperties>().GetNoteData().beat_end.ToString();
-        timeStart.text = (float.Parse(beatStart.text) / (Editor.chart.bpm / 60)).ToString();
-        timeEnd.text = (float.Parse(beatEnd.text) / (Editor.chart.bpm / 60)).ToString();
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("time_start", timeStart.text);
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("time_end", timeEnd.text);
-
+        if (noteId == -1) return;
+        NoteData _ntdt = Notes_List[noteId];
+        _ntdt.beat_start = double.Parse(_beatstart);
+        _ntdt.time_start = _ntdt.beat_start * 60 / Editor.chart.bpm;
+        if(_ntdt.type == "Hold" && _ntdt.beat_end < _ntdt.beat_start)
+        {
+            _ntdt.beat_end = _ntdt.beat_start + 0.25;
+            _ntdt.time_end = _ntdt.beat_end * 60 / Editor.chart.bpm;
+        }
+        Notes_List[noteId] = _ntdt;
+        beatStart.text = _ntdt.beat_start.ToString();
+        beatEnd.text = _ntdt.beat_end.ToString();
+        timeStart.text = _ntdt.time_start.ToString();
+        timeEnd.text = _ntdt.time_end.ToString();
         _changePlace();
     }
     private void _changeBeatEnd(string _beatend)
@@ -88,19 +107,48 @@ public class NoteEdit : MonoBehaviour
         {
             _beatend = beatEnd.text = "0";
         }
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("beat_end", _beatend);
-        beatStart.text = TargetNote.GetComponent<NoteProperties>().GetNoteData().beat_start.ToString();
-        beatEnd.text = TargetNote.GetComponent<NoteProperties>().GetNoteData().beat_end.ToString();
-        timeStart.text = (float.Parse(beatStart.text) / (Editor.chart.bpm / 60)).ToString();
-        timeEnd.text = (float.Parse(beatEnd.text) / (Editor.chart.bpm / 60)).ToString();
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("time_start", timeStart.text);
-        TargetNote.GetComponent<NoteProperties>().ChangeVar("time_end", timeEnd.text);
+        if (noteId == -1) return;
+        NoteData _ntdt = Notes_List[noteId];
+        _ntdt.beat_end = double.Parse(_beatend);
+        _ntdt.time_end = _ntdt.beat_end * 60 / Editor.chart.bpm;
+        if (_ntdt.type == "Hold" && _ntdt.beat_end < _ntdt.beat_start)
+        {
+            _ntdt.beat_start = _ntdt.beat_end - 0.25;
+            _ntdt.time_start = _ntdt.beat_start * 60 / Editor.chart.bpm;
+        }
+        beatStart.text = _ntdt.beat_start.ToString();
+        beatEnd.text = _ntdt.beat_end.ToString();
+        timeStart.text = _ntdt.time_start.ToString();
+        timeEnd.text = _ntdt.time_end.ToString();
         _changePlace();
     }
     private void _changePlace()
     {
-        Editor.Note_Inst.Remove(TargetNote);
-        Editor.AddNewNote(TargetNote);
+        NoteData _ntdt = Notes_List[noteId];
+        GameObject _ntobj = NoteObjects[noteId];
+        GameObject _targetbox = TargetBoxObjects[noteId];
+        Notes_List.Remove(_ntdt);
+        NoteObjects.Remove(_ntobj);
+        TargetBoxObjects.Remove(_targetbox);
+        Add(_ntdt, _ntobj, BoxEditor.BoxObjects.IndexOf(_targetbox));
+        noteId = Notes_List.IndexOf(_ntdt);
+        _changeObjPos(noteId);
+    }
+    private void _changeObjPos(int index)
+    {
+        NoteData _ntdt = Notes_List[index];
+        GameObject _ntobj = NoteObjects[index];
+        if(_ntdt.type == "Hold")
+        {
+            float y1 = (float)_ntdt.beat_start * 20;
+            float y2 = (float)_ntdt.beat_end * 20;
+            _ntobj.transform.localPosition = new Vector3(0, (y1 + y2) / 2, -5);
+            _ntobj.transform.localScale = new Vector3(6, (y2 - y1), 1);
+        }
+        else
+        {
+            _ntobj.transform.localPosition = new Vector3(0, (float)_ntdt.beat_start * 20, -5);
+        }
     }
     public Button delete;
 
@@ -141,7 +189,6 @@ public class NoteEdit : MonoBehaviour
             }
             newNote.AddComponent<BoxCollider>();
             NoteObjects.Add(newNote);
-           
         }
     }
 
@@ -159,15 +206,47 @@ public class NoteEdit : MonoBehaviour
         NoteColor.OnColorChanged += _colorchange;
         delete.onClick.AddListener(OnDelete);
     }
+    private bool _compareNote(NoteData newNote, NoteData orgNote)
+    {
+        if (newNote.beat_start != orgNote.beat_start)
+        {
+            return newNote.beat_start < orgNote.beat_start;
+        }
+        if (newNote.beat_end != orgNote.beat_end)
+        {
+            return newNote.beat_end < orgNote.beat_end;
+        }
+        if (newNote.type == "Drag") return true;
+        if (newNote.type == "Hold" && orgNote.type != "Drag") return true;
+        if (newNote.type == "Tap" && orgNote.type != "Drag" && orgNote.type != "Hold") return true;
+        return false;
+    }
     public void Add(NoteData newNote,GameObject TargetObject,int BoxId)
     {
-        Notes_List.Add(newNote);
-        NoteObjects.Add(TargetObject);
-        TargetBoxObjects.Add(BoxEditor.BoxObjects[newNote.targetbox]);
-        ChangeTarget(NoteObjects.Count-1);
+        int _left = 0, _right = Notes_List.Count - 1;
+        while(_left <= _right)
+        {
+            int _mid = (_left + _right) / 2;
+            NoteData _now_ntdt = Notes_List[_mid];
+            if(_compareNote(newNote, _now_ntdt))
+            {
+                _right = _mid - 1;
+            }
+            else
+            {
+                _left = _mid + 1;
+            }
+        }
+        if (_left < 0) _left = 0;
+        else if (_left >= Notes_List.Count) _left = Notes_List.Count;
+        Notes_List.Insert(_left, newNote);
+        NoteObjects.Insert(_left,TargetObject);
+        TargetBoxObjects.Insert(_left,BoxEditor.BoxObjects[newNote.targetbox]);
+        ChangeTarget(_left);
     }
     public void ChangeTarget(int index)
     {
+        noteId = index;
         NoteData _ntdt = Notes_List[index];
         type = _ntdt.type;
         targetbox.text = BoxEditor.BoxObjects.IndexOf(TargetBoxObjects[index]).ToString();
@@ -185,33 +264,27 @@ public class NoteEdit : MonoBehaviour
             beatEnd.interactable = false;
         }
         else beatEnd.interactable = true;
+        Editor.CameraMoveTarget(NoteObjects[index]);
     }
     public GameObject GetTarget()
     {
-        return TargetNote;
+        return NoteObjects[noteId];
     }
+    public int GetId()
+    {
+        return noteId;
+    }
+    public void Delete(int index)
+    {
+        Notes_List.RemoveAt(index);
+        Destroy(NoteObjects[index]);
+        NoteObjects.RemoveAt(index);
+        TargetBoxObjects.RemoveAt(index);
+    }
+
     private void OnDelete()
     {
-        int _id = Editor.Note_Inst.IndexOf(TargetNote);
-        Editor.Note_Inst.RemoveAt(_id);
-        GameObject _targetevent = TargetNote.GetComponent<NoteProperties>().GetEvent();
-        EventProperties[] _eve = _targetevent.GetComponentsInChildren<EventProperties>();
-        for(int i = 0; i < _eve.Length; i++)
-        {
-            Editor.Event_Inst.Remove(_eve[i].gameObject);
-        }
-        Destroy(_targetevent);
-        Destroy(TargetNote);
-        
-        if(_id < Editor.Note_Inst.Count && _id>=0)
-        {
-            ChangeTarget(_id);
-        }
-        else if(_id == Editor.Note_Inst.Count)
-        {
-            _id--;
-            if(_id>=0) ChangeTarget(_id);
-        }
+        Delete(noteId);
     }
     void OnDestroy()
     {

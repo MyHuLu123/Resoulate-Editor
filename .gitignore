@@ -10,6 +10,7 @@
 /[Aa]ssets/AssetStoreTools*
 Assets/Font/SweiRightBottomLegCJKsc-Black SDF.asset
 Assets/Font/SweiRightBottomLegCJKsc-Black SDF.asset.meta
+Recordings/*
 
 # 工程文件
 *.csproj

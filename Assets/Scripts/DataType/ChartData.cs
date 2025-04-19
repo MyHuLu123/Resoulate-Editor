@@ -14,6 +14,8 @@ public struct ChartData
     public EventData[] events;
     public int covernum;
     public CoverData[] covers;
+    public int coverpartnum;
+    public CoverPartData[] coverparts;
     public int imagenum;
     public ImageData[] images;
     public int spritenum;

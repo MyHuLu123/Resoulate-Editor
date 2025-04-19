@@ -20,32 +20,18 @@ public class AnimEdit : MonoBehaviour
     public Button Delete;
     public Material LineMaterial;
 
+    public BoxEdit BoxEditor;
+    public NoteEdit NoteEditor;
+    public CoverEdit CoverEditor;
+
+
     public TMP_Dropdown EventType;
     public TMP_InputField _ID1;
     public TMP_InputField _ID2;
-
-    public enum AnimObjectType
-    {
-        Box,
-        Note,
-        Cover,
-        CoverPart,
-        setting
-    }
-    public enum BoxVar
-    {
-        x,
-        y,
-        angle,
-        speed,
-        color_r,
-        color_g,
-        color_b,
-        color_a
-    }
     
-    private GameObject targetObject = null;
-    private string targetType = null;
+    public GameObject targetObject = null;
+    public string targetType = null;
+
     private GameObject ChoosingShower = null;
 
     private int index1 = -1;
@@ -53,6 +39,12 @@ public class AnimEdit : MonoBehaviour
 
     private List<GameObject> EventTypes = new List<GameObject>();
     private List<List<GameObject>> EventTracks = new List<List<GameObject>>();
+
+    public List<GameObject> EventTargetObject = new List<GameObject>();
+    public List<GameObject> EventParent = new List<GameObject>();
+    public List<List<EventData>> Events_List = new List<List<EventData>>();
+    public List<List<GameObject>> Event_Shower = new List<List<GameObject>>();
+    public int nowTargetId = -1;
 
     private List<string> variable_type = new List<string>();
     private List<List<string>> variable_use = new List<List<string>>();
@@ -75,7 +67,7 @@ public class AnimEdit : MonoBehaviour
         TextMeshPro textObject = new GameObject("TextObject").AddComponent<TextMeshPro>();
         textObject.text = _text;
         textObject.font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
-        textObject.fontSize = 30;
+        textObject.enableAutoSizing = true;
         textObject.color = Color.white;
         textObject.alignment = TextAlignmentOptions.Center;
         return textObject.gameObject;
@@ -89,22 +81,13 @@ public class AnimEdit : MonoBehaviour
 
         return NewTrack;
     }
-    private void GetObjects()
-    {
-        Transform _type = transform.Find("Type"); EventType = _type.GetComponent<TMP_Dropdown>();
-        Transform _id1 = transform.Find("ID1"); _ID1 = _id1.GetComponent<TMP_InputField>(); _ID1.text = "-1";
-        Transform _id2 = transform.Find("ID2"); _ID2 = _id2.GetComponent<TMP_InputField>(); _ID2.text = "-1";
-        EventType.onValueChanged.AddListener(typechanger);
-        _ID1.onEndEdit.AddListener(idchanger);
-        _ID2.onEndEdit.AddListener(idchanger);
-    }
     private void TrackInit()
     {
         variable_type = new List<string>
         {
-            "Box","Note","Cover"
+            "Box","Note","Cover","CoverPart"
         };
-
+        variable_use = new List<List<string>>();
         List<string> _var_box = new List<string>
         {
             "x","y","angle","speed","color_r","color_g","color_b","color_a"
@@ -117,12 +100,17 @@ public class AnimEdit : MonoBehaviour
         variable_use.Add(_var_note);
         List<string> _var_cover = new List<string>
         {
-            "x","y","angle","x_scale","y_scale","color_r","color_g","color_b","color_a"
+            "color_r","color_g","color_b","color_a"
         };
         variable_use.Add(_var_cover);
-
-        for(int i = 0; i < variable_use.Count; i++)
+        List<string> _var_coverpart = new List<string>
         {
+            "x","y","angle","x_scale","y_scale"
+        };
+        variable_use.Add(_var_coverpart );
+        for (int i = 0; i < variable_use.Count; i++)
+        {
+            
             variable_type_map[variable_type[i]] = i;
             GameObject _current_type = new GameObject(variable_type[i]); _current_type.transform.parent = AnimObject.transform;
             GameObject _track_collection = new GameObject("Tracks"); _track_collection.transform.parent = _current_type.transform;
@@ -158,8 +146,10 @@ public class AnimEdit : MonoBehaviour
                 _empty_track.transform.localPosition = new Vector3(j * 15, 0, -5);
                 
             }
-            Debug.Log("now index:" + i.ToString());
-            Editor.Box_Inst[i].GetComponent<BoxProperties>().ChangeEvent(_box_collect);
+            EventParent.Add(_box_collect);
+            EventTargetObject.Add(BoxEditor.BoxObjects[i]);
+            Events_List.Add(new List<EventData>());
+            Event_Shower.Add(new List<GameObject>());
             _box_collect.SetActive(false);
         }
         for (int i = 0; i < _chart.notenum; i++)
@@ -171,7 +161,10 @@ public class AnimEdit : MonoBehaviour
                 GameObject _empty_track = new GameObject(variable_use[1][j]); _empty_track.transform.parent = _note_collect.transform;
                 _empty_track.transform.localPosition = new Vector3(j * 15, 0, -5);
             }
-            Editor.Note_Inst[i].GetComponent<NoteProperties>().ChangeEvent(_note_collect);
+            EventParent.Add(_note_collect);
+            EventTargetObject.Add(NoteEditor.NoteObjects[i]);
+            Events_List.Add(new List<EventData>());
+            Event_Shower.Add(new List<GameObject>());
             _note_collect.SetActive(false);
         }
         for (int i = 0; i < _chart.covernum; i++)
@@ -184,7 +177,28 @@ public class AnimEdit : MonoBehaviour
                 _empty_track.transform.localPosition = new Vector3(j * 15, 0, -5);
 
             }
+            
+            EventParent.Add(_cover_collect);
+            EventTargetObject.Add(CoverEditor.CoverObject[i]);
+            Events_List.Add(new List<EventData>());
+            Event_Shower.Add(new List<GameObject>());
             _cover_collect.SetActive(false);
+        }
+        for (int k = 0; k < Editor.chart.coverpartnum; k++)
+        {
+            CoverPartData _coverPart = Editor.chart.coverparts[k];
+            GameObject _coverPart_collect = new GameObject("CoverPart_events"); _coverPart_collect.transform.SetParent(EventTypes[3].transform);
+            for (int j = 0; j < variable_use[3].Count; j++)
+            {
+                GameObject _empty_track = new GameObject(variable_use[3][j]); _empty_track.transform.parent = _coverPart_collect.transform;
+                _empty_track.transform.localPosition = new Vector3(j * 15, 0, -5);
+
+            }
+            EventParent.Add(_coverPart_collect);
+            EventTargetObject.Add(CoverEditor.CoverPartObject[k]);
+            Events_List.Add(new List<EventData>());
+            Event_Shower.Add(new List<GameObject>());
+            _coverPart_collect.SetActive(false);
         }
 
         for (int i = 0; i < _event_data.Length; i++)
@@ -194,19 +208,35 @@ public class AnimEdit : MonoBehaviour
             float _height = (float)(_event.endbeat - _event.beat) * 20;
             int _id1 = variable_type_map[_event.Object];
             int _id2 = variable_map[_event.Object][_event.variable];
-            GameObject Shower = new GameObject("EventLine");
+            GameObject Shower = new GameObject("EventShower");
             Shower.transform.parent = EventTypes[_id1].transform.GetChild(1+ _event.id).GetChild(_id2);
             Shower.transform.localPosition = new Vector3(0, _ypos, -10);
             Shower.transform.localScale = new Vector3(10, _height, 1);
             Shower.AddComponent<BoxCollider>();
-            Shower.AddComponent<EventProperties>().NewEvent(_event);
+            
             if(_event.Object == "Box")
             {
-                Shower.GetComponent<EventProperties>().ChangeObject(Editor.Box_Inst[_event.id]);
+                int _index = EventTargetObject.IndexOf(BoxEditor.BoxObjects[_event.id]);
+                Events_List[_index].Add(_event);
+                Event_Shower[_index].Add(Shower);
             }
             else if (_event.Object == "Note")
             {
-                Shower.GetComponent<EventProperties>().ChangeObject(Editor.Note_Inst[_event.id]);
+                int _index = EventTargetObject.IndexOf(NoteEditor.NoteObjects[_event.id]);
+                Events_List[_index].Add(_event);
+                Event_Shower[_index].Add(Shower);
+            }
+            else if(_event.Object == "Cover")
+            {
+                int _index = EventTargetObject.IndexOf(CoverEditor.CoverObject[_event.id]);
+                Events_List[_index].Add(_event);
+                Event_Shower[_index].Add(Shower);
+            }
+            else if(_event.Object == "CoverPart")
+            {
+                int _index = EventTargetObject.IndexOf(CoverEditor.CoverPartObject[_event.id]);
+                Events_List[_index].Add(_event);
+                Event_Shower[_index].Add(Shower);
             }
 
             SpriteRenderer S = Shower.AddComponent<SpriteRenderer>();
@@ -220,8 +250,6 @@ public class AnimEdit : MonoBehaviour
             {
                 L.SetPosition(j, new Vector3(Shower.transform.position.x - 5 + 10 * (1.0f * j / 100f), Shower.transform.position.y - _height / 2 + _height * (float)AnimationCollection.AnimationGet(_event.Tween, _event.Ease, 1.0 * j / 100), Shower.transform.position.z-3));
             }
-
-            Editor.Event_Inst.Add(Shower);
         }
         
     }
@@ -230,41 +258,41 @@ public class AnimEdit : MonoBehaviour
         TrackInit();
         EventInit();
     }
-    public void ChangeTarget(GameObject _obj)
+    public void ChangeTarget(string type,GameObject _obj)
     {
-        if(targetObject != null)
+        if (nowTargetId != -1)
         {
-            if (targetObject.GetComponent<BoxProperties>() != null)
-            {
-                EventTypes[0].SetActive(false);
-                targetObject.GetComponent<BoxProperties>().GetEvent().SetActive(false);
-                
-            }
-            else if(targetObject.GetComponent<NoteProperties>() != null)
-            {
-                EventTypes[1].SetActive(false);
-                targetObject.GetComponent<NoteProperties>().GetEvent().SetActive(false);
-            }
+            EventParent[nowTargetId].SetActive(false);
+            EventParent[nowTargetId].transform.parent.gameObject.SetActive(false);
         }
-        targetObject = _obj;
-        if(_obj != null)
+        int index = EventTargetObject.IndexOf(_obj);
+        if(index != -1)
         {
-            if (_obj.GetComponent<BoxProperties>() != null)
+            nowTargetId = index;
+            targetObject = _obj;
+            EventParent[index].SetActive(true);
+            EventParent[nowTargetId].transform.parent.gameObject.SetActive(true);
+            if (type == "Box")
             {
-                EventTypes[0].SetActive(true);
-                _obj.GetComponent<BoxProperties>().GetEvent().SetActive(true);
                 Object = targetType = "Box"; EventType.value = 0;
-                _ID1.text = Editor.Box_Inst.IndexOf(_obj).ToString();
+                _ID1.text = BoxEditor.BoxObjects.IndexOf(_obj).ToString();
             }
-            else if (_obj.GetComponent<NoteProperties>() != null)
+            else if(type == "Note")
             {
-                EventTypes[1].SetActive(true);
-                _obj.GetComponent<NoteProperties>().GetEvent().SetActive(true);
                 Object = targetType = "Note"; EventType.value = 1;
-                _ID1.text = Editor.Note_Inst.IndexOf(_obj).ToString();
+                _ID1.text = NoteEditor.NoteObjects.IndexOf(_obj).ToString();
+            }
+            else if(type == "Cover")
+            {
+                Object = targetType = "Cover"; EventType.value = 2;
+                _ID1.text = CoverEditor.CoverObject.IndexOf(_obj).ToString();
+            }
+            else if(type == "CoverPart")
+            {
+                Object = targetType = "CoverPart"; EventType.value = 3;
+                _ID1.text = CoverEditor.CoverPartObject.IndexOf(_obj).ToString();
             }
         }
-        
     }
     private void typechanger(int x)
     {
@@ -279,14 +307,14 @@ public class AnimEdit : MonoBehaviour
         if(EventType.value == 0)//Box
         {
             if (int.Parse(_ID1.text) < 0) _ID1.text = "0";
-            else if (int.Parse(_ID1.text) >= Editor.Box_Inst.Count) _ID1.text = (Editor.Box_Inst.Count - 1).ToString();
-            ChangeTarget(Editor.Box_Inst[int.Parse(_ID1.text)]);
+            else if (int.Parse(_ID1.text) >= BoxEditor.BoxObjects.Count) _ID1.text = (BoxEditor.BoxObjects.Count - 1).ToString();
+            ChangeTarget("Box", BoxEditor.BoxObjects[int.Parse(_ID1.text)]);
         }
         else if(EventType.value == 1)
         {
             if (int.Parse(_ID1.text) < 0) _ID1.text = "0";
-            else if (int.Parse(_ID1.text) >= Editor.Note_Inst.Count) _ID1.text = (Editor.Note_Inst.Count - 1).ToString();
-            ChangeTarget(Editor.Note_Inst[int.Parse(_ID1.text)]);
+            else if (int.Parse(_ID1.text) >= NoteEditor.NoteObjects.Count) _ID1.text = (NoteEditor.NoteObjects.Count - 1).ToString();
+            ChangeTarget("Note", NoteEditor.NoteObjects[int.Parse(_ID1.text)]);
         }
     }
     public GameObject AddBox()
@@ -345,7 +373,6 @@ public class AnimEdit : MonoBehaviour
             Ease_map[Ease.options[i].text] = i;
         }
         Delete.onClick.AddListener(OnDelete);
-        //GetObjects();
         start_val.text = "0";
         end_val.text = "0";
         start_beat.text = "0";
@@ -365,7 +392,10 @@ public class AnimEdit : MonoBehaviour
     {
         if (ChoosingShower != null)
         {
-            Editor.Event_Inst.Remove(ChoosingShower);
+            int _id = Event_Shower[nowTargetId].IndexOf(ChoosingShower);
+            if (_id == -1) return;
+            Event_Shower[nowTargetId].Remove(ChoosingShower);
+            Events_List[nowTargetId].RemoveAt(_id);
             Destroy(ChoosingShower);
             ChoosingShower = null;
         }
@@ -389,14 +419,7 @@ public class AnimEdit : MonoBehaviour
     private GameObject CreateShower(int track_id,double beat)
     {
         GameObject Shower = new GameObject("EventLine");
-        if(EventType.value == 0)
-        {
-            Shower.transform.parent = targetObject.GetComponent<BoxProperties>().GetEvent().transform.GetChild(track_id).transform;
-        }
-        else if(EventType.value == 1)
-        {
-            Shower.transform.parent = targetObject.GetComponent<NoteProperties>().GetEvent().transform.GetChild(track_id).transform;
-        }
+        Shower.transform.parent = EventParent[nowTargetId].transform.GetChild(track_id).transform;
         Shower.transform.localPosition = new Vector3(0, (float)beat * 20, -10);
         Shower.transform.localScale = new Vector3(10,1,1);
         Shower.AddComponent<BoxCollider>();
@@ -434,7 +457,8 @@ public class AnimEdit : MonoBehaviour
     //----------------------------------//修改监听器
     private void _shower_change(GameObject _shower)
     {
-        EventData _eve = _shower.GetComponent<EventProperties>().GetEventData();
+        int _id = Event_Shower[nowTargetId].IndexOf(_shower);
+        EventData _eve = Events_List[nowTargetId][_id];
         float ypos = 10 * ((float)(_eve.beat + _eve.endbeat));
         float yscale = 20 * ((float)(_eve.endbeat - _eve.beat));
         _shower.transform.localPosition = new Vector3(0, ypos, -10);
@@ -449,7 +473,10 @@ public class AnimEdit : MonoBehaviour
     {
         if(Editor.Choose.isOn && ChoosingShower != null)
         {
-            ChoosingShower.GetComponent<EventProperties>().ChangeVar("Tween",Tween.options[val].text);
+            int _id = Event_Shower[nowTargetId].IndexOf(ChoosingShower);
+            EventData _evdt = Events_List[nowTargetId][_id];
+            _evdt.Tween = Tween.options[val].text;
+            Events_List[nowTargetId][_id] = _evdt;
             _shower_change(ChoosingShower);
         }
     }
@@ -457,7 +484,10 @@ public class AnimEdit : MonoBehaviour
     {
         if (Editor.Choose.isOn && ChoosingShower != null)
         {
-            ChoosingShower.GetComponent<EventProperties>().ChangeVar("Ease", Ease.options[val].text);
+            int _id = Event_Shower[nowTargetId].IndexOf(ChoosingShower);
+            EventData _evdt = Events_List[nowTargetId][_id];
+            _evdt.Ease = Ease.options[val].text;
+            Events_List[nowTargetId][_id] = _evdt;
             _shower_change(ChoosingShower);
         }
     }
@@ -465,21 +495,32 @@ public class AnimEdit : MonoBehaviour
     {
         if (Editor.Choose.isOn && ChoosingShower != null)
         {
-            ChoosingShower.GetComponent<EventProperties>().ChangeVar("start", val);
+            int _id = Event_Shower[nowTargetId].IndexOf(ChoosingShower);
+            EventData _evdt = Events_List[nowTargetId][_id];
+            _evdt.start = double.Parse(val);
+            Events_List[nowTargetId][_id] = _evdt;
         }
     }
     private void _endval_change(string val)
     {
         if (Editor.Choose.isOn && ChoosingShower != null)
         {
-            ChoosingShower.GetComponent<EventProperties>().ChangeVar("end", val);
+            int _id = Event_Shower[nowTargetId].IndexOf(ChoosingShower);
+            EventData _evdt = Events_List[nowTargetId][_id];
+            _evdt.end = double.Parse(val);
+            Events_List[nowTargetId][_id] = _evdt;
         }
     }
     private void _startbeat_change(string val)
     {
         if (Editor.Choose.isOn && ChoosingShower != null)
         {
-            ChoosingShower.GetComponent<EventProperties>().ChangeVar("beat", val);
+            int _id = Event_Shower[nowTargetId].IndexOf(ChoosingShower);
+            EventData _evdt = Events_List[nowTargetId][_id];
+            _evdt.beat = double.Parse(val);
+            _evdt.time = _evdt.beat * 60 / Editor.chart.bpm;
+            _evdt.during = _evdt.endbeat * 60 / Editor.chart.bpm - _evdt.time;
+            Events_List[nowTargetId][_id] = _evdt;
             _shower_change(ChoosingShower);
         }
     }
@@ -487,11 +528,49 @@ public class AnimEdit : MonoBehaviour
     {
         if (Editor.Choose.isOn && ChoosingShower != null)
         {
-            ChoosingShower.GetComponent<EventProperties>().ChangeVar("endbeat", val);
+            int _id = Event_Shower[nowTargetId].IndexOf(ChoosingShower);
+            EventData _evdt = Events_List[nowTargetId][_id];
+            _evdt.endbeat = double.Parse(val);
+            _evdt.during = _evdt.endbeat * 60 / Editor.chart.bpm - _evdt.time;
+            Events_List[nowTargetId][_id] = _evdt;
             _shower_change(ChoosingShower);
         }
     }
+    private bool _compare(EventData _a,EventData _b)
+    {
+        if (_a.beat != _b.beat)
+        {
+            return _a.beat < _b.beat;
+        }
+        if (_a.endbeat != _b.endbeat)
+        {
+            return _a.endbeat < _b.endbeat;
+        }
+        return true;
+    }
+    public void Add(EventData eventData,GameObject shower)
+    {
+        int _left = 0, _right = Events_List[nowTargetId].Count - 1;
+        while(_left <= _right)
+        {
+            int _mid = (_left + _right) / 2;
+            if(_compare(eventData, Events_List[nowTargetId][_mid]))
+            {
+                _right = _mid - 1;
+            }
+            else
+            {
+                _left = _mid + 1;
+            }
+        }
+        if (_left < 0) _left = 0;
+        else if (_left > Events_List[nowTargetId].Count) _left = Events_List[nowTargetId].Count;
 
+        Events_List[nowTargetId].Insert(_left, eventData);
+        Event_Shower[nowTargetId].Insert(_left, shower);
+
+
+    }
 
     //----------------------------------//
     void Update()
@@ -505,10 +584,12 @@ public class AnimEdit : MonoBehaviour
                 if (Physics.Raycast(ray, out RaycastHit hit, 100f, LayerMask.GetMask("Default")))
                 {
                     GameObject _eve = hit.collider.gameObject;
-                    if(_eve.GetComponent<EventProperties>() != null)
+                    int _id = Event_Shower[nowTargetId].IndexOf(_eve);
+                    if (_id != -1)
                     {
                         ChoosingShower = _eve;
-                        LoadEvent(_eve.GetComponent<EventProperties>().GetEventData());
+                        LoadEvent(Events_List[nowTargetId][_id]);
+                        Editor.CameraMoveTarget(_eve);
                     }
                 }
             }       
@@ -557,12 +638,44 @@ public class AnimEdit : MonoBehaviour
             }
             else if (Input.GetMouseButtonUp(0) && gameObject.activeSelf && NowLine != null)
             {
-                NowLine.AddComponent<EventProperties>().NewEvent(NowEventData);
-                NowLine.GetComponent<EventProperties>().ChangeObject(targetObject);
-                Editor.AddNewEvent(NowLine);
+                Add(NowEventData, NowLine);
                 NowLine = null;
             }
         }
+    }
+    public EventData[] GetEventArray()
+    {
+        List<EventData> _total = new List<EventData>();
+        for(int i= 0;i < Events_List.Count;i++)
+        {
+            for(int j = 0; j < Events_List[i].Count; j++)
+            {
+                EventData _data = Events_List[i][j];
+                if (_data.Object == "Box")
+                {
+                    _data.id = BoxEditor.BoxObjects.IndexOf(EventTargetObject[i]);
+                }
+                else if(_data.Object == "Note")
+                {
+                    _data.id = NoteEditor.NoteObjects.IndexOf(EventTargetObject[i]);
+                }
+                else if (_data.Object == "Cover")
+                {
+                    _data.id = CoverEditor.CoverObject.IndexOf(EventTargetObject[i]);
+                }
+                else if (_data.Object == "CoverPart")
+                {
+                    _data.id = CoverEditor.CoverPartObject.IndexOf(EventTargetObject[i]);
+                }
+                _total.Add(_data);
+            }
+        }
+        _total.Sort((a,b) => {
+            int beatComp = a.beat.CompareTo(b.beat);
+            if (beatComp != 0) return beatComp;
+            return a.endbeat.CompareTo(b.endbeat);
+        });
+        return _total.ToArray();
     }
     void OnDestroy()
     {
@@ -574,119 +687,5 @@ public class AnimEdit : MonoBehaviour
         end_beat.onEndEdit.RemoveAllListeners();
         Delete.onClick.RemoveAllListeners();
     }
-    /*
-    private void Tracks()
-    {
-        if (AnimTracks.Count != 0)
-        {
-            for(int i=0;i< AnimTracks.Count; i++)
-            {
-                Destroy(AnimTracks[i]);
-                Destroy(AnimTMPText[i]);
-            }
-            AnimTracks.Clear(); AnimTMPText.Clear();
-        }
-        for(int i = 0; i < variable_use.Count; i++)//按照给定变量数量创建轨道
-        {
-            GameObject NewText = SetText(i);
-            GameObject NewTrack = SetTrack(i);
 
-            ObjectEvents.Add(new List<AddChart.EventData>());
-            EventShower.Add(new List<GameObject>());
-
-            AnimTracks.Add(NewTrack);
-            AnimTMPText.Add(NewText);
-        }
-    }
-    private void AddEvents()
-    {
-        switch (Object)
-        {
-            case "Box":
-                foreach(AddChart.EventData evdt in Editor.Box_Events[index1])
-                {
-                    int track_id = variable_map[evdt.variable];
-                    ObjectEvents[track_id].Add(evdt);
-                    EventShower[track_id].Add(CreateShower(evdt));
-                }
-                break;
-            case "Note":
-                foreach (AddChart.EventData evdt in Editor.Note_Events[index1][index2])
-                {
-                    int track_id = variable_map[evdt.variable];
-                    ObjectEvents[track_id].Add(evdt);
-                    EventShower[track_id].Add(CreateShower(evdt));
-                }
-                break;
-        }
-
-    }
-    /*
-    public void LoadInfo(string obj,int id1,int id2)
-    {
-        index1 = id1;
-        index2 = id2;
-        for(int i = 0; i < EventShower.Count; i++)
-        {
-            foreach (GameObject gmj in EventShower[i])
-            {
-                Destroy(gmj);
-            }
-        }
-        variable_map.Clear();
-        ObjectEvents.Clear();
-        EventShower.Clear();
-        Object = obj;
-        switch (obj)
-        {
-            case "Note":
-                variable_use = new List<string> {"xoffset","yoffset","speedoffset","angleoffset"};
-                for(int i = 0; i < variable_use.Count; i++)
-                {
-                    variable_map[variable_use[i]] = i;
-                    ObjectEvents.Add(new List<AddChart.EventData>());
-                }
-                break;
-            case "Box":
-                variable_use = new List<string> {"x", "y", "speed", "angle"};
-                for (int i = 0; i < variable_use.Count; i++)
-                {
-                    variable_map[variable_use[i]] = i;
-                    ObjectEvents.Add(new List<AddChart.EventData>());
-                }
-                break;
-        }
-        Tracks();
-        AddEvents();
-
-    }
-    public void UpdateInfo()
-    {
-        switch (Object)
-        {
-            case "Box"://打击箱
-                Editor.Box_Events[index1].Clear();
-                for (int i=0;i< AnimTracks.Count; i++)
-                {
-                    for(int j=0;j< ObjectEvents[i].Count; j++)
-                    {
-                        Editor.Box_Events[index1].Add(ObjectEvents[i][j]);
-                    }
-                }
-                break;
-            case "Note":
-                Editor.Note_Events[index1][index2].Clear();
-                for (int i = 0; i < AnimTracks.Count; i++)
-                {
-                    for (int j = 0; j < ObjectEvents[i].Count; j++)
-                    {
-                        Editor.Note_Events[index1][index2].Add(ObjectEvents[i][j]);
-                    }
-                }
-                break;
-        }
-        variable_map.Clear();
-        ObjectEvents.Clear();
-    }
-    */
 }

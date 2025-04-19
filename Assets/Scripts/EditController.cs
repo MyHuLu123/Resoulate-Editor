@@ -62,9 +62,9 @@ public class EditController : MonoBehaviour
     private string[] Info;
     private string Folderpath;
 
-    public List<GameObject> Box_Inst = new List<GameObject>();
-    public List<GameObject> Note_Inst = new List<GameObject>();
-    public List<GameObject> Event_Inst = new List<GameObject>();
+    //public List<GameObject> Box_Inst = new List<GameObject>();
+    //public List<GameObject> Note_Inst = new List<GameObject>();
+    //public List<GameObject> Event_Inst = new List<GameObject>();
     public List<Sprite> Sprite_Images = new List<Sprite>();
 
     public GameObject NowChosenBox = null;
@@ -77,12 +77,12 @@ public class EditController : MonoBehaviour
     private List<GameObject> Lines = new List<GameObject>();
     private List<GameObject> BoxLines = new List<GameObject>();
     //[HideInInspector] public List<BoxData> Boxes;
-    [HideInInspector] public List<List<NoteData>> Notes = new List<List<NoteData>>();
-    [HideInInspector] public List<List<List<EventData>>> Note_Events = new List<List<List<EventData>>>();
-    [HideInInspector] public List<List<EventData>> Box_Events = new List<List<EventData>>();
+    //[HideInInspector] public List<List<NoteData>> Notes = new List<List<NoteData>>();
+    //[HideInInspector] public List<List<List<EventData>>> Note_Events = new List<List<List<EventData>>>();
+    //[HideInInspector] public List<List<EventData>> Box_Events = new List<List<EventData>>();
 
-    [HideInInspector] public List<EventData> Events_all = new List<EventData>();
-    [HideInInspector] public List<List<GameObject>> Notes_WatchAble = new List<List<GameObject>>();
+    //[HideInInspector] public List<EventData> Events_all = new List<EventData>();
+    //[HideInInspector] public List<List<GameObject>> Notes_WatchAble = new List<List<GameObject>>();
 
     private Vector3 MouseStartPos;
     private Vector3 NowMousePos;
@@ -140,11 +140,7 @@ public class EditController : MonoBehaviour
         BoxBorder = new GameObject("BoxBorder");
         BoxBorder.transform.parent = EditObject.transform;
         //Box分割线
-        GameObject line = Instantiate(Border);line.transform.position = new Vector3(0,0,0);
-        line.transform.rotation = Quaternion.Euler(new Vector3(0,0,90));
-        line.transform.parent = BoxBorder.transform;
-        FixOnCamera O = line.AddComponent<FixOnCamera>();O.fixY = true;
-        BoxLines.Add(line);
+        
 
         Borders = new GameObject("Borders");
         NotesSquare = new GameObject("NotesSquare");
@@ -154,30 +150,8 @@ public class EditController : MonoBehaviour
         //添加已有的box,note,event数据
         CoverEditor.Init();//Box依附在Cover上
         BoxObject.Init();
-        
-        for (int i = 0; i < chart.boxnum; i++)
-        {
-            //Boxes.Add(chart.boxes[i]);
-            line = Instantiate(Border); line.transform.position = new Vector3((i+1)*8, 0, 0);
-            line.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 90));
-            line.transform.parent = BoxBorder.transform;
-            O = line.AddComponent<FixOnCamera>(); O.fixY = true;
-            BoxLines.Add(line);
-            Notes.Add(new List<NoteData>());
-            Notes_WatchAble.Add(new List<GameObject>());
-            Box_Events.Add(new List<EventData>());
-            Note_Events.Add(new List<List<EventData>>());
-
-            GameObject NewBox = new GameObject("Box");
-            NewBox.transform.parent = NotesSquare.transform; NewBox.transform.localPosition = new Vector3((i+0.5f)*8,0,-1);
-            BoxProperties _new_box_prop = NewBox.AddComponent<BoxProperties>();
-            _new_box_prop.NewBox(chart.boxes[i]);
-            Box_Inst.Add(NewBox);
-        }
+        NoteEditor.Init();
         AnimEditor.Init();
-        int[] note_targetbox = new int[chart.notenum];
-        int[] note_boxid = new int[chart.notenum];
-        
         TimeOffset.text = "0";
         //-------------------------------------------------------------//
         //添加按钮函数
@@ -198,8 +172,6 @@ public class EditController : MonoBehaviour
         ImageSelect.onValueChanged.AddListener(_change_sprite_select);
 
         //-------------------------------------------------------------//
-        //调用其它部分的初始化
-        AnimEditor.Init();
     }
     public Sprite SpriteGet(string _name)
     {
@@ -208,6 +180,28 @@ public class EditController : MonoBehaviour
             if (Sprite_Images[i].name == _name) return Sprite_Images[i];
         }
         return null;
+    }
+    public void CameraMoveTarget(GameObject Target)
+    {
+        Vector3 _world_pos = Target.transform.position;
+        float screenWidth = 1920f;
+        float screenCenterX = screenWidth / 2f;
+        float targetScreenX = 600f;
+        float offsetX = ((targetScreenX - screenCenterX) / screenWidth) * (Camera.main.orthographicSize * Camera.main.aspect * 2f);
+        FixOnCamera _fix;
+        float _pos_x = _world_pos.x - offsetX;
+        float _pos_y = _world_pos.y;
+        if (Target.TryGetComponent<FixOnCamera>(out _fix))
+        {
+            if (_fix.fixX) _pos_x = Camera.main.transform.position.x;
+            if (_fix.fixY) _pos_y = Camera.main.transform.position.y;
+        }
+
+        Camera.main.transform.position = new Vector3(
+            _pos_x,
+            _pos_y,
+            Camera.main.transform.position.z
+        );
     }
     private void _import_image()
     {
@@ -271,7 +265,6 @@ public class EditController : MonoBehaviour
                     CoverEditor.gameObject.SetActive(true);
                 }
                 BoxBorder.gameObject.SetActive(true);
-                AnimEditor.ChangeTarget(null);
                 ImageImport.enabled = true;
             }
         }
@@ -279,18 +272,32 @@ public class EditController : MonoBehaviour
         {
             BoxBorder.gameObject.SetActive(false);
             AnimEditor.gameObject.SetActive(true);
-            CoverEditor.gameObject.SetActive(false);
             AnimObject.SetActive(true);
             AddNote.isOn = false;
             if (BoxObject.gameObject.activeSelf == true)
             {
                 BoxObject.gameObject.SetActive(false);
-                AnimEditor.ChangeTarget(NowChosenBox);
+                AnimEditor.ChangeTarget("Box",NowChosenBox);
             }
             else if (NoteEditor.gameObject.activeSelf == true)
             {
                 NoteEditor.gameObject.SetActive(false);
-                AnimEditor.ChangeTarget(NoteEditor.GetTarget());
+                AnimEditor.ChangeTarget("Note",NoteEditor.GetTarget());
+            }
+            else if(CoverEditor.gameObject.activeSelf == true)
+            {
+                CoverEditor.gameObject.SetActive(false);
+                if(CoverEditor.chosen_coverId != -1)
+                {
+                    if(CoverEditor.chosen_coverPartId != -1)
+                    {
+                        AnimEditor.ChangeTarget("CoverPart",CoverEditor.CoverObject[CoverEditor.chosen_coverId].transform.GetChild(CoverEditor.chosen_coverPartId).gameObject);
+                    }
+                    else
+                    {
+                        AnimEditor.ChangeTarget("Cover", CoverEditor.CoverObject[CoverEditor.chosen_coverId]);
+                    }
+                }
             }
             ImageImport.enabled = false;
         }
@@ -524,8 +531,6 @@ public class EditController : MonoBehaviour
                         Sprite _sprite = Sprite.Create(_texture, new Rect(0, 0, _texture.width, _texture.height), new Vector2(0.5f, 0.5f));
                         _sprite.name = _img.ImageName;
                         Sprite_Images.Add(_sprite);
-                        ImageSelect.options.Add(new TMP_Dropdown.OptionData(_sprite.name));
-                        ImageSelect.options[ImageSelect.options.Count - 1].image = _sprite;
                     }
                 }
             }
@@ -533,6 +538,8 @@ public class EditController : MonoBehaviour
         _change_sprite_select(0);
         for (int i = 0; i < Sprite_Images.Count; i++)
         {
+            ImageSelect.options.Add(new TMP_Dropdown.OptionData(Sprite_Images[i].name));
+            ImageSelect.options[ImageSelect.options.Count - 1].image = Sprite_Images[i];
             Debug.Log(Sprite_Images[i].name);
         }
     }
@@ -629,84 +636,7 @@ public class EditController : MonoBehaviour
     //添加打击箱
     private void ChangeAddBox()
     {
-        
-        BoxData _NewBox = new BoxData();
-        _NewBox.x = _NewBox.y = 0;
-        _NewBox.angle = 0;
-        _NewBox.color = Color.white;
-        _NewBox.speed = 10;
-        GameObject NewBox = new GameObject("Box");
-        NewBox.transform.parent = NotesSquare.transform; NewBox.transform.localPosition = new Vector3((Box_Inst.Count + 0.5f) * 8, 0, -1);
-        BoxProperties _new_box_prop = NewBox.AddComponent<BoxProperties>();
-        _new_box_prop.NewBox(_NewBox); _new_box_prop.ChangeEvent(AnimEditor.AddBox());
-        Box_Inst.Add(NewBox);
-
-        GameObject line = Instantiate(Border); line.transform.position = new Vector3(Box_Inst.Count * 8, 0, 0);
-        line.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 90));
-        line.transform.parent = BoxBorder.transform;
-        FixOnCamera O = line.AddComponent<FixOnCamera>(); O.fixY = true;
-        BoxLines.Add(line);
-        Notes.Add(new List<NoteData>());
-        Notes_WatchAble.Add(new List<GameObject>());
-    }
-    //-------------------------------------------------------------//
-    //将新的Note放入列表中并按顺序
-    private bool _compareNote(GameObject _newNote,GameObject _orgNote)
-    {
-        NoteProperties _new = _newNote.GetComponent<NoteProperties>();
-        NoteProperties _org = _orgNote.GetComponent<NoteProperties>();
-        if(_new.GetNoteData().beat_start != _org.GetNoteData().beat_start)
-        {
-            return _new.GetNoteData().beat_start < _org.GetNoteData().beat_start;
-        }
-        if (_new.GetNoteData().beat_end != _org.GetNoteData().beat_end)
-        {
-            return _new.GetNoteData().beat_end < _org.GetNoteData().beat_end;
-        }
-        if (_new.GetNoteData().type == "Drag") return true;
-        if (_new.GetNoteData().type == "Hold" && _org.GetNoteData().type != "Drag") return true;
-        if (_new.GetNoteData().type == "Tap" && _org.GetNoteData().type != "Drag" && _org.GetNoteData().type != "Hold") return true;
-        return false;
-    }
-    public void AddNewNote(GameObject _newNoteInst)
-    {
-        for(int i = 0; i < Note_Inst.Count; i++)
-        {
-            if (_compareNote(_newNoteInst, Note_Inst[i]))
-            {
-                Note_Inst.Insert(i, _newNoteInst);
-                break;
-            }
-        }
-    }
-    //将新的Event放入列表中并按顺序
-    private bool _compareEvent(GameObject _newEvent,GameObject _orgEvent)
-    {
-        EventProperties _new = _newEvent.GetComponent<EventProperties>();
-        EventProperties _org = _orgEvent.GetComponent<EventProperties>();
-        EventData _new_eve = _new.GetEventData();
-        EventData _org_eve = _org.GetEventData();
-        Debug.Log(_new_eve.beat); Debug.Log(_org_eve.beat);
-        if (_new_eve.beat != _org_eve.beat)
-        {
-            return _new_eve.beat < _org_eve.beat;
-        }
-        if (_new_eve.endbeat != _org_eve.endbeat)
-        {
-            return _new_eve.endbeat < _org_eve.endbeat;
-        }
-        return true;
-    }
-    public void AddNewEvent(GameObject _newEventInst)
-    {
-        for(int i = 0; i < Event_Inst.Count; i++)
-        {
-            if (_compareEvent(_newEventInst, Event_Inst[i]))
-            {
-                Event_Inst.Insert(i, _newEventInst);
-                break;
-            }
-        }
+        BoxObject.Add();
     }
     //-------------------------------------------------------------//
     //检测点击事件
@@ -723,7 +653,7 @@ public class EditController : MonoBehaviour
                     int id = (int)(ClickPos.x / 8);
                     if (id >= 0 && id < BoxObject.Boxes_List.Count)
                     {
-                        if (Box_Inst[id] == NowChosenBox && AddNote.isOn)
+                        if (BoxObject.BoxObjects[id] == NowChosenBox && AddNote.isOn)
                         {
 
                             //BoxObject.gameObject.SetActive(false); BoxObject.UpdateInfo();
@@ -745,20 +675,10 @@ public class EditController : MonoBehaviour
                                 newDragWatchAble.transform.localScale = new Vector3(6, 1, 1);
                                 newDragWatchAble.GetComponent<SpriteRenderer>().color = new Vector4(1, (float)0.92, (float)0.016, (float)0.6);
                                 newDragWatchAble.AddComponent<BoxCollider>();
-                                newDragWatchAble.AddComponent<NoteProperties>().NewNote(newDrag);
-                                newDragWatchAble.GetComponent<NoteProperties>().ChangeBox(NowChosenBox);
-                                newDragWatchAble.GetComponent<NoteProperties>().ChangeEvent(AnimEditor.AddNote());
-
-                                Notes[ChooseBox].Add(newDrag);
-                                Notes_WatchAble[ChooseBox].Add(newDragWatchAble);
-                                AddNewNote(newDragWatchAble);
-                                //Debug.Log(NoteEditor.gameObject.activeSelf);
 
                                 NowChosenNote = newDragWatchAble;
                                 NoteEditor.Add(newDrag, newDragWatchAble,id);
                                 NoteEditor.gameObject.SetActive(true);
-
-
                                 //NoteEditor.LoadInfo(ChooseBox, Notes[ChooseBox].Count - 1);
                             }
                             else if (TapAndHold.isOn)
@@ -770,8 +690,6 @@ public class EditController : MonoBehaviour
                                 NowNote.transform.localPosition = new Vector3(0, (float)beat * 20, -5);
                                 NowNote.transform.localScale = new Vector3(6, 1, 1);
                                 NowNote.GetComponent<SpriteRenderer>().color = new Vector4(0, 0, 1, (float)0.6);
-                                NowNote.AddComponent<NoteProperties>().ChangeBox(NowChosenBox);
-                                NowNote.GetComponent<NoteProperties>().ChangeEvent(AnimEditor.AddNote());
                             }
                         }
                         else if (Choose.isOn)
@@ -784,27 +702,29 @@ public class EditController : MonoBehaviour
                                 if(_note_id != -1)
                                 {
                                     NoteEditor.ChangeTarget(_note_id);
+                                    BoxObject.gameObject.SetActive(false);
+                                    NoteEditor.gameObject.SetActive(true);
                                 }
                             }
                             else
                             {
-                                NowChosenBox = Box_Inst[id];
+                                NowChosenBox = BoxObject.BoxObjects[id];
                                 Chosen = true;
                                 ChooseBox = id;
                                 BoxObject.gameObject.SetActive(true);
                                 NoteEditor.gameObject.SetActive(false);
-                                BoxObject.ChangeTarget(Box_Inst[id]);
+                                BoxObject.ChangeTarget(id);
                             }
 
                         }
                         else
                         {
-                            NowChosenBox = Box_Inst[id];
+                            NowChosenBox = BoxObject.BoxObjects[id];
                             ChooseBox = id;
                             Chosen = true;
                             NoteEditor.gameObject.SetActive(false);
                             BoxObject.gameObject.SetActive(true);
-                            BoxObject.ChangeTarget(Box_Inst[id]);
+                            BoxObject.ChangeTarget(id);
                         }
 
                     }
@@ -852,12 +772,7 @@ public class EditController : MonoBehaviour
                 newTap.color = Color.white;
                 newTap.beat_start = beat;
                 newTap.time_start = time;
-                //NowNote.transform.parent = EditObject.transform;
-                NowNote.GetComponent<NoteProperties>().NewNote(newTap);
-                //AddNewNote(NowNote);
-                Notes[ChooseBox].Add(newTap);
                 NowNote.AddComponent<BoxCollider>();
-                Notes_WatchAble[ChooseBox].Add(NowNote);
                 NoteEditor.Add(newTap, NowNote, ChooseBox);
                 NoteEditor.gameObject.SetActive(true);
                 BoxObject.gameObject.SetActive(false);
@@ -871,12 +786,7 @@ public class EditController : MonoBehaviour
                 newHold.color = Color.white;
                 newHold.beat_start = NowNoteStartBeat;newHold.beat_end = beat;
                 newHold.time_start = NowNoteStartTime;newHold.time_end = time;
-                // NowNote.transform.parent = EditObject.transform;
-                NowNote.GetComponent<NoteProperties>().NewNote(newHold);
-                AddNewNote(NowNote);
                 NowNote.AddComponent<BoxCollider>();
-                Notes[ChooseBox].Add(newHold);
-                Notes_WatchAble[ChooseBox].Add(NowNote);
                 NoteEditor.Add(newHold, NowNote, ChooseBox);
                 NoteEditor.gameObject.SetActive(true);
                 BoxObject.gameObject.SetActive(false);
@@ -889,33 +799,22 @@ public class EditController : MonoBehaviour
     {
         chart.time_offset = double.Parse(TimeOffset.text);
         chart.beat_set = double.Parse(BeatOffset.text);
-        chart.boxnum = Box_Inst.Count;
+        chart.boxnum = BoxObject.Boxes_List.Count;
         chart.boxes = new BoxData[chart.boxnum];
         for (int i=0;i< chart.boxnum; i++)
         {
-            chart.boxes[i] = Box_Inst[i].GetComponent<BoxProperties>().GetBoxData();
+            chart.boxes[i] = BoxObject.Boxes_List[i];
         }
-        chart.notenum = Note_Inst.Count;
+        chart.notenum = NoteEditor.Notes_List.Count;
 
         chart.notes = new NoteData[chart.notenum];
         for (int i = 0; i < chart.notenum; i++)
         {
-            chart.notes[i] = Note_Inst[i].GetComponent<NoteProperties>().GetNoteData();
+            chart.notes[i] = NoteEditor.Notes_List[i];
         }
-        chart.eventnum = Event_Inst.Count;
-        chart.events = new EventData[chart.eventnum];
-        for (int i = 0; i < chart.eventnum; i++)
-        {
-            chart.events[i] = Event_Inst[i].GetComponent<EventProperties>().GetEventData();
-            if(chart.events[i].Object == "Box")
-            {
-                chart.events[i].id = Box_Inst.IndexOf(Event_Inst[i].GetComponent<EventProperties>().GetObject());
-            }
-            else if (chart.events[i].Object == "Note")
-            {
-                chart.events[i].id = Note_Inst.IndexOf(Event_Inst[i].GetComponent<EventProperties>().GetObject());
-            }
-        }
+
+        chart.events = AnimEditor.GetEventArray();
+        chart.eventnum = chart.events.Length;
         chart.imagenum = Sprite_Images.Count - 8;
         chart.images = new ImageData[chart.imagenum];
         for (int i=8;i< Sprite_Images.Count; i++)
@@ -935,9 +834,10 @@ public class EditController : MonoBehaviour
                 chart.images[i - 8].filterMode = "Trilinear";
             }
         }
-        CoverEditor.CoverLoadPart();
         chart.covernum = CoverEditor.covers.Count;
         chart.covers = CoverEditor.covers.ToArray();
+        chart.coverpartnum = CoverEditor.coverParts.Count;
+        chart.coverparts = CoverEditor.coverParts.ToArray();
         ViewCanvas.GetComponent<ViewControl>().Init();
     }
     public void SaveChart()//保存修改到本地
